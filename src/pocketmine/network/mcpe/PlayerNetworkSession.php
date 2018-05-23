@@ -168,7 +168,7 @@ abstract class PlayerNetworkSession{
 				return;
 			}
 
-			$this->server->getLogger()->debug($this->loginData->getUsername() . " is NOT logged into to Xbox Live");
+			$this->server->getLogger()->debug($this->loginData->getUsername() . " is NOT logged into Xbox Live");
 		}else{
 			$this->server->getLogger()->debug($this->loginData->getUsername() . " is logged into Xbox Live");
 		}

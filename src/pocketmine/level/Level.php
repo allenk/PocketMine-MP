@@ -671,7 +671,7 @@ class Level implements ChunkManager, Metadatable{
 		if($this->stopTime){
 			return;
 		}else{
-			$this->time += 1;
+			++$this->time;
 		}
 	}
 
@@ -2512,6 +2512,25 @@ class Level implements ChunkManager, Metadatable{
 	}
 
 	/**
+	 * @param Entity $entity
+	 *
+	 * @throws LevelException
+	 */
+	public function addEntity(Entity $entity){
+		if($entity->isClosed()){
+			throw new \InvalidArgumentException("Attempted to add a garbage closed Entity to Level");
+		}
+		if($entity->getLevel() !== $this){
+			throw new LevelException("Invalid Entity level");
+		}
+
+		if($entity instanceof Player){
+			$this->players[$entity->getId()] = $entity;
+		}
+		$this->entities[$entity->getId()] = $entity;
+	}
+
+	/**
 	 * Removes the entity from the level index
 	 *
 	 * @param Entity $entity
@@ -2530,25 +2549,6 @@ class Level implements ChunkManager, Metadatable{
 
 		unset($this->entities[$entity->getId()]);
 		unset($this->updateEntities[$entity->getId()]);
-	}
-
-	/**
-	 * @param Entity $entity
-	 *
-	 * @throws LevelException
-	 */
-	public function addEntity(Entity $entity){
-		if($entity->isClosed()){
-			throw new \InvalidArgumentException("Attempted to add a garbage closed Entity to Level");
-		}
-		if($entity->getLevel() !== $this){
-			throw new LevelException("Invalid Entity level");
-		}
-
-		if($entity instanceof Player){
-			$this->players[$entity->getId()] = $entity;
-		}
-		$this->entities[$entity->getId()] = $entity;
 	}
 
 	/**
@@ -2764,51 +2764,48 @@ class Level implements ChunkManager, Metadatable{
 	}
 
 	/**
-	 * @param Vector3 $spawn default null
+	 * @param Vector3|null $spawn
 	 *
-	 * @return bool|Position
+	 * @return Position
 	 */
-	public function getSafeSpawn($spawn = null){
+	public function getSafeSpawn(?Vector3 $spawn = null) : Position{
 		if(!($spawn instanceof Vector3) or $spawn->y < 1){
 			$spawn = $this->getSpawnLocation();
 		}
-		if($spawn instanceof Vector3){
-			$max = $this->worldHeight;
-			$v = $spawn->floor();
-			$chunk = $this->getChunk($v->x >> 4, $v->z >> 4, false);
-			$x = (int) $v->x;
-			$z = (int) $v->z;
-			if($chunk !== null){
-				$y = (int) min($max - 2, $v->y);
-				$wasAir = ($chunk->getBlockId($x & 0x0f, $y - 1, $z & 0x0f) === 0);
-				for(; $y > 0; --$y){
-					if($this->isFullBlock($this->getBlockAt($x, $y, $z))){
-						if($wasAir){
-							$y++;
-							break;
-						}
-					}else{
-						$wasAir = true;
-					}
-				}
 
-				for(; $y >= 0 and $y < $max; ++$y){
-					if(!$this->isFullBlock($this->getBlockAt($x, $y + 1, $z))){
-						if(!$this->isFullBlock($this->getBlockAt($x, $y, $z))){
-							return new Position($spawn->x, $y === (int) $spawn->y ? $spawn->y : $y, $spawn->z, $this);
-						}
-					}else{
-						++$y;
+		$max = $this->worldHeight;
+		$v = $spawn->floor();
+		$chunk = $this->getChunk($v->x >> 4, $v->z >> 4, false);
+		$x = (int) $v->x;
+		$z = (int) $v->z;
+		if($chunk !== null){
+			$y = (int) min($max - 2, $v->y);
+			$wasAir = ($chunk->getBlockId($x & 0x0f, $y - 1, $z & 0x0f) === 0);
+			for(; $y > 0; --$y){
+				if($this->isFullBlock($this->getBlockAt($x, $y, $z))){
+					if($wasAir){
+						$y++;
+						break;
 					}
+				}else{
+					$wasAir = true;
 				}
-
-				$v->y = $y;
 			}
 
-			return new Position($spawn->x, $v->y, $spawn->z, $this);
+			for(; $y >= 0 and $y < $max; ++$y){
+				if(!$this->isFullBlock($this->getBlockAt($x, $y + 1, $z))){
+					if(!$this->isFullBlock($this->getBlockAt($x, $y, $z))){
+						return new Position($spawn->x, $y === (int) $spawn->y ? $spawn->y : $y, $spawn->z, $this);
+					}
+				}else{
+					++$y;
+				}
+			}
+
+			$v->y = $y;
 		}
 
-		return false;
+		return new Position($spawn->x, $v->y, $spawn->z, $this);
 	}
 
 	/**

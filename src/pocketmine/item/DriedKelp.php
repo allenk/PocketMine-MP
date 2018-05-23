@@ -23,16 +23,16 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
-use pocketmine\block\Block;
-use pocketmine\block\BlockFactory;
-
-class Anvil extends ItemBlock{
-
+class DriedKelp extends Food{
 	public function __construct(int $meta = 0){
-		parent::__construct(Item::ANVIL, $meta);
+		parent::__construct(self::DRIED_KELP, $meta, "Dried Kelp");
 	}
 
-	public function getBlock() : Block{
-		return BlockFactory::get(Block::ANVIL, $this->meta << 2);
+	public function getFoodRestore() : int{
+		return 1;
+	}
+
+	public function getSaturationRestore() : float{
+		return 0.6;
 	}
 }

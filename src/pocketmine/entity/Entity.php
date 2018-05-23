@@ -1459,7 +1459,7 @@ abstract class Entity extends Location implements Metadatable, EntityIds{
 
 	}
 
-	public function isInsideOfWater() : bool{
+	public function isUnderwater() : bool{
 		$block = $this->level->getBlockAt(Math::floorFloat($this->x), Math::floorFloat($y = ($this->y + $this->getEyeHeight())), Math::floorFloat($this->z));
 
 		if($block instanceof Water){
