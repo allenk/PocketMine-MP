@@ -1940,7 +1940,7 @@ class Server{
 	 * @param PacketBuffer $payload
 	 * @param bool         $forceSync
 	 *
-	 * @return \pocketmine\network\mcpe\CompressBatchedTask
+	 * @return CompressBatchedTask
 	 */
 	public function prepareBatch(PacketBuffer $payload, bool $forceSync = false) : CompressBatchedTask{
 		Timings::$playerNetworkTimer->startTiming();
