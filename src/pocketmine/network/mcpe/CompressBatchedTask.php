@@ -31,15 +31,11 @@ class CompressBatchedTask extends AsyncTask{
 	/** @var int */
 	private $compressionLevel;
 
-	/** @var float */
-	public $start;
-
 	/**
 	 * @param string $uncompressedPayload
 	 * @param int    $compressionLevel
 	 */
 	public function __construct(string $uncompressedPayload, int $compressionLevel){
-		$this->start = microtime(true);
 		$this->uncompressedPayload = $uncompressedPayload;
 		$this->compressionLevel = $compressionLevel;
 	}
