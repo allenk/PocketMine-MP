@@ -277,9 +277,6 @@ class Server{
 	private $players = [];
 
 	/** @var Player[] */
-	private $loggedInPlayers = [];
-
-	/** @var Player[] */
 	private $playerList = [];
 
 	/** @var Level[] */
@@ -706,13 +703,6 @@ class Server{
 	 */
 	public function getCommandMap(){
 		return $this->commandMap;
-	}
-
-	/**
-	 * @return Player[]
-	 */
-	public function getLoggedInPlayers() : array{
-		return $this->loggedInPlayers;
 	}
 
 	/**
@@ -2335,18 +2325,6 @@ class Server{
 		return $player;
 	}
 
-	public function onPlayerLogin(Player $player){
-		if($this->sendUsageTicker > 0){
-			$this->uniquePlayers[$player->getRawUniqueId()] = $player->getRawUniqueId();
-		}
-
-		$this->loggedInPlayers[$player->getRawUniqueId()] = $player;
-	}
-
-	public function onPlayerLogout(Player $player){
-		unset($this->loggedInPlayers[$player->getRawUniqueId()]);
-	}
-
 	public function addPlayer(Player $player){
 		$this->players[spl_object_hash($player)] = $player;
 	}
@@ -2362,6 +2340,10 @@ class Server{
 		$this->updatePlayerListData($player->getUniqueId(), $player->getId(), $player->getDisplayName(), $player->getSkin(), $player->getXuid());
 
 		$this->playerList[$player->getRawUniqueId()] = $player;
+
+		if($this->sendUsageTicker > 0){
+			$this->uniquePlayers[$player->getRawUniqueId()] = $player->getRawUniqueId();
+		}
 	}
 
 	public function removeOnlinePlayer(Player $player){
