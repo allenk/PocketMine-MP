@@ -43,6 +43,7 @@ use pocketmine\event\level\SpawnChangeEvent;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
+use pocketmine\level\biome\Biome;
 use pocketmine\level\format\Chunk;
 use pocketmine\level\format\ChunkException;
 use pocketmine\level\format\EmptySubChunk;
@@ -52,15 +53,14 @@ use pocketmine\level\format\io\LevelProvider;
 use pocketmine\level\generator\Generator;
 use pocketmine\level\generator\GeneratorRegisterTask;
 use pocketmine\level\generator\GeneratorUnregisterTask;
-use pocketmine\level\generator\LightPopulationTask;
 use pocketmine\level\generator\PopulationTask;
 use pocketmine\level\light\BlockLightUpdate;
+use pocketmine\level\light\LightPopulationTask;
 use pocketmine\level\light\SkyLightUpdate;
 use pocketmine\level\particle\DestroyBlockParticle;
 use pocketmine\level\particle\Particle;
 use pocketmine\level\sound\Sound;
 use pocketmine\math\AxisAlignedBB;
-use pocketmine\math\Math;
 use pocketmine\math\Vector2;
 use pocketmine\math\Vector3;
 use pocketmine\metadata\BlockMetadataStore;
@@ -1099,12 +1099,12 @@ class Level implements ChunkManager, Metadatable{
 	 * @return Block[]
 	 */
 	public function getCollisionBlocks(AxisAlignedBB $bb, bool $targetFirst = false) : array{
-		$minX = Math::floorFloat($bb->minX - 1);
-		$minY = Math::floorFloat($bb->minY - 1);
-		$minZ = Math::floorFloat($bb->minZ - 1);
-		$maxX = Math::ceilFloat($bb->maxX + 1);
-		$maxY = Math::ceilFloat($bb->maxY + 1);
-		$maxZ = Math::ceilFloat($bb->maxZ + 1);
+		$minX = (int) floor($bb->minX - 1);
+		$minY = (int) floor($bb->minY - 1);
+		$minZ = (int) floor($bb->minZ - 1);
+		$maxX = (int) floor($bb->maxX + 1);
+		$maxY = (int) floor($bb->maxY + 1);
+		$maxZ = (int) floor($bb->maxZ + 1);
 
 		$collides = [];
 
@@ -1113,7 +1113,7 @@ class Level implements ChunkManager, Metadatable{
 				for($x = $minX; $x <= $maxX; ++$x){
 					for($y = $minY; $y <= $maxY; ++$y){
 						$block = $this->getBlockAt($x, $y, $z);
-						if($block->getId() !== 0 and $block->collidesWithBB($bb)){
+						if(!$block->canPassThrough() and $block->collidesWithBB($bb)){
 							return [$block];
 						}
 					}
@@ -1124,7 +1124,7 @@ class Level implements ChunkManager, Metadatable{
 				for($x = $minX; $x <= $maxX; ++$x){
 					for($y = $minY; $y <= $maxY; ++$y){
 						$block = $this->getBlockAt($x, $y, $z);
-						if($block->getId() !== 0 and $block->collidesWithBB($bb)){
+						if(!$block->canPassThrough() and $block->collidesWithBB($bb)){
 							$collides[] = $block;
 						}
 					}
@@ -1162,12 +1162,12 @@ class Level implements ChunkManager, Metadatable{
 	 * @return AxisAlignedBB[]
 	 */
 	public function getCollisionCubes(Entity $entity, AxisAlignedBB $bb, bool $entities = true) : array{
-		$minX = Math::floorFloat($bb->minX - 1);
-		$minY = Math::floorFloat($bb->minY - 1);
-		$minZ = Math::floorFloat($bb->minZ - 1);
-		$maxX = Math::ceilFloat($bb->maxX + 1);
-		$maxY = Math::ceilFloat($bb->maxY + 1);
-		$maxZ = Math::ceilFloat($bb->maxZ + 1);
+		$minX = (int) floor($bb->minX - 1);
+		$minY = (int) floor($bb->minY - 1);
+		$minZ = (int) floor($bb->minZ - 1);
+		$maxX = (int) floor($bb->maxX + 1);
+		$maxY = (int) floor($bb->maxY + 1);
+		$maxZ = (int) floor($bb->maxZ + 1);
 
 		$collides = [];
 
@@ -1175,9 +1175,11 @@ class Level implements ChunkManager, Metadatable{
 			for($x = $minX; $x <= $maxX; ++$x){
 				for($y = $minY; $y <= $maxY; ++$y){
 					$block = $this->getBlockAt($x, $y, $z);
-					if(!$block->canPassThrough() and $block->collidesWithBB($bb)){
+					if(!$block->canPassThrough()){
 						foreach($block->getCollisionBoxes() as $blockBB){
-							$collides[] = $blockBB;
+							if($blockBB->intersectsWith($bb)){
+								$collides[] = $blockBB;
+							}
 						}
 					}
 				}
@@ -1901,10 +1903,10 @@ class Level implements ChunkManager, Metadatable{
 		$nearby = [];
 
 		if($entity === null or $entity->canCollide){
-			$minX = Math::floorFloat(($bb->minX - 2) / 16);
-			$maxX = Math::ceilFloat(($bb->maxX + 2) / 16);
-			$minZ = Math::floorFloat(($bb->minZ - 2) / 16);
-			$maxZ = Math::ceilFloat(($bb->maxZ + 2) / 16);
+			$minX = ((int) floor($bb->minX - 2)) >> 4;
+			$maxX = ((int) floor($bb->maxX + 2)) >> 4;
+			$minZ = ((int) floor($bb->minZ - 2)) >> 4;
+			$maxZ = ((int) floor($bb->maxZ + 2)) >> 4;
 
 			for($x = $minX; $x <= $maxX; ++$x){
 				for($z = $minZ; $z <= $maxZ; ++$z){
@@ -1932,10 +1934,10 @@ class Level implements ChunkManager, Metadatable{
 	public function getNearbyEntities(AxisAlignedBB $bb, Entity $entity = null) : array{
 		$nearby = [];
 
-		$minX = Math::floorFloat(($bb->minX - 2) / 16);
-		$maxX = Math::ceilFloat(($bb->maxX + 2) / 16);
-		$minZ = Math::floorFloat(($bb->minZ - 2) / 16);
-		$maxZ = Math::ceilFloat(($bb->maxZ + 2) / 16);
+		$minX = ((int) floor($bb->minX - 2)) >> 4;
+		$maxX = ((int) floor($bb->maxX + 2)) >> 4;
+		$minZ = ((int) floor($bb->minZ - 2)) >> 4;
+		$maxZ = ((int) floor($bb->maxZ + 2)) >> 4;
 
 		for($x = $minX; $x <= $maxX; ++$x){
 			for($z = $minZ; $z <= $maxZ; ++$z){
@@ -1963,10 +1965,10 @@ class Level implements ChunkManager, Metadatable{
 	public function getNearestEntity(Vector3 $pos, float $maxDistance, string $entityType = Entity::class, bool $includeDead = false) : ?Entity{
 		assert(is_a($entityType, Entity::class, true));
 
-		$minX = Math::floorFloat(($pos->x - $maxDistance) / 16);
-		$maxX = Math::ceilFloat(($pos->x + $maxDistance) / 16);
-		$minZ = Math::floorFloat(($pos->z - $maxDistance) / 16);
-		$maxZ = Math::ceilFloat(($pos->z + $maxDistance) / 16);
+		$minX = ((int) floor($pos->x - $maxDistance)) >> 4;
+		$maxX = ((int) floor($pos->x + $maxDistance)) >> 4;
+		$minZ = ((int) floor($pos->z - $maxDistance)) >> 4;
+		$maxZ = ((int) floor($pos->z + $maxDistance)) >> 4;
 
 		$currentTargetDistSq = $maxDistance ** 2;
 
@@ -2216,10 +2218,10 @@ class Level implements ChunkManager, Metadatable{
 	 * @param int $x
 	 * @param int $z
 	 *
-	 * @return int
+	 * @return Biome
 	 */
-	public function getHeightMap(int $x, int $z) : int{
-		return $this->getChunk($x >> 4, $z >> 4, true)->getHeightMap($x & 0x0f, $z & 0x0f);
+	public function getBiome(int $x, int $z) : Biome{
+		return Biome::getBiome($this->getBiomeId($x, $z));
 	}
 
 	/**
@@ -2229,6 +2231,16 @@ class Level implements ChunkManager, Metadatable{
 	 */
 	public function setBiomeId(int $x, int $z, int $biomeId){
 		$this->getChunk($x >> 4, $z >> 4, true)->setBiomeId($x & 0x0f, $z & 0x0f, $biomeId);
+	}
+
+	/**
+	 * @param int $x
+	 * @param int $z
+	 *
+	 * @return int
+	 */
+	public function getHeightMap(int $x, int $z) : int{
+		return $this->getChunk($x >> 4, $z >> 4, true)->getHeightMap($x & 0x0f, $z & 0x0f);
 	}
 
 	/**
