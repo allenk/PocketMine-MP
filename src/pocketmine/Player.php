@@ -1160,6 +1160,20 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		return true;
 	}
 
+	public function doChunkRequests(){
+		if(!$this->isOnline()){
+			return;
+		}
+
+		if($this->nextChunkOrderRun-- <= 0){
+			$this->orderChunks();
+		}
+
+		if(count($this->loadQueue) > 0){
+			$this->sendNextChunk();
+		}
+	}
+
 	/**
 	 * @return Position
 	 */
@@ -1791,20 +1805,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk->effectId = $effect->getId();
 
 		$this->dataPacket($pk);
-	}
-
-	public function processChunkSends(){
-		if(!$this->isOnline()){
-			return;
-		}
-
-		if($this->nextChunkOrderRun-- <= 0){
-			$this->orderChunks();
-		}
-
-		if(count($this->loadQueue) > 0){
-			$this->sendNextChunk();
-		}
 	}
 
 	/**
