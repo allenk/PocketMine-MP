@@ -1860,10 +1860,9 @@ class Server{
 	/**
 	 * @param Player[]     $players
 	 * @param DataPacket[] $packets
-	 * @param bool         $forceSync
 	 * @param bool         $immediate
 	 */
-	public function broadcastPackets(array $players, array $packets, bool $forceSync = false, bool $immediate = false) : void{
+	public function broadcastPackets(array $players, array $packets, bool $immediate = false) : void{
 		if(empty($packets)){
 			throw new \InvalidArgumentException("Tried to broadcast empty list of packets");
 		}
@@ -1904,7 +1903,7 @@ class Server{
 				$stream->addPacket($packet);
 			}
 
-			$task = $this->prepareBatch($stream, $forceSync or $immediate);
+			$task = $this->prepareBatch($stream, $immediate);
 
 			//this makes each session add this batch to a queue for sending - the object properties will be modified
 			//and then the sessions will be notified that the batch is ready to send
