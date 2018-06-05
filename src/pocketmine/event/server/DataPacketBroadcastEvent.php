@@ -26,7 +26,6 @@ namespace pocketmine\event\server;
 use pocketmine\event\Cancellable;
 use pocketmine\network\mcpe\PlayerNetworkSession;
 use pocketmine\network\mcpe\protocol\DataPacket;
-use pocketmine\Player;
 
 class DataPacketBroadcastEvent extends ServerEvent implements Cancellable{
 
