@@ -146,7 +146,7 @@ class ProcessLoginTask extends AsyncTask{
 
 	public function onCompletion(Server $server){
 		/** @var PlayerNetworkSession $session */
-		$session = $this->fetchLocal($server);
+		$session = $this->fetchLocal();
 
 		$session->onClientAuthenticated($this->packet, $this->error, $this->authenticated);
 	}

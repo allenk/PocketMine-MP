@@ -120,7 +120,7 @@ class LoginNetworkHandler extends NetworkHandler{
 
 
 		if(!$packet->skipVerification){
-			$this->server->getScheduler()->scheduleAsyncTask(new ProcessLoginTask($this->session, $packet));
+			$this->server->getAsyncPool()->submitTask(new ProcessLoginTask($this->session, $packet));
 		}else{
 			$this->session->onClientAuthenticated($packet, null, false);
 		}

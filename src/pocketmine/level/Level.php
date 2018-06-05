@@ -239,10 +239,8 @@ class Level implements ChunkManager, Metadatable{
 	/** @var int */
 	public $tickRateCounter = 0;
 
-	/** @var Generator */
+	/** @var string|Generator */
 	private $generator;
-	/** @var Generator */
-	private $generatorInstance;
 
 	/** @var bool */
 	private $closed = false;
@@ -379,24 +377,21 @@ class Level implements ChunkManager, Metadatable{
 	}
 
 	public function initLevel(){
-		$generator = $this->generator;
-		$this->generatorInstance = new $generator($this->provider->getGeneratorOptions());
-		$this->generatorInstance->init($this, new Random($this->getSeed()));
-
 		$this->registerGenerator();
 	}
 
 	public function registerGenerator(){
-		$size = $this->server->getScheduler()->getAsyncTaskPoolSize();
-		for($i = 0; $i < $size; ++$i){
-			$this->server->getScheduler()->scheduleAsyncTaskToWorker(new GeneratorRegisterTask($this, $this->generatorInstance), $i);
+		$pool = $this->server->getAsyncPool();
+		for($i = 0, $size = $pool->getSize(); $i < $size; ++$i){
+			$pool->submitTaskToWorker(new GeneratorRegisterTask($this, $this->generator, $this->provider->getGeneratorOptions()), $i);
+
 		}
 	}
 
 	public function unregisterGenerator(){
-		$size = $this->server->getScheduler()->getAsyncTaskPoolSize();
-		for($i = 0; $i < $size; ++$i){
-			$this->server->getScheduler()->scheduleAsyncTaskToWorker(new GeneratorUnregisterTask($this), $i);
+		$pool = $this->server->getAsyncPool();
+		for($i = 0, $size = $pool->getSize(); $i < $size; ++$i){
+			$pool->submitTaskToWorker(new GeneratorUnregisterTask($this), $i);
 		}
 	}
 
@@ -2313,8 +2308,7 @@ class Level implements ChunkManager, Metadatable{
 			}
 			unset($this->chunkPopulationQueue[$index]);
 			$this->setChunk($x, $z, $chunk, false);
-			$chunk = $this->getChunk($x, $z, false);
-			if($chunk !== null and ($oldChunk === null or !$oldChunk->isPopulated()) and $chunk->isPopulated()){
+			if(($oldChunk === null or !$oldChunk->isPopulated()) and $chunk->isPopulated()){
 				$this->server->getPluginManager()->callEvent(new ChunkPopulateEvent($this, $chunk));
 
 				foreach($this->getChunkLoaders($x, $z) as $loader){
@@ -2486,7 +2480,7 @@ class Level implements ChunkManager, Metadatable{
 					throw new ChunkException("Invalid Chunk sent");
 				}
 
-				$this->server->getScheduler()->scheduleAsyncTask(new ChunkRequestTask($this, $chunk));
+				$this->server->getAsyncPool()->submitTask(new ChunkRequestTask($this, $chunk));
 
 				$this->timings->syncChunkSendPrepareTimer->stopTiming();
 			}
@@ -2671,7 +2665,7 @@ class Level implements ChunkManager, Metadatable{
 		$this->server->getPluginManager()->callEvent(new ChunkLoadEvent($this, $chunk, !$chunk->isGenerated()));
 
 		if(!$chunk->isLightPopulated() and $chunk->isPopulated() and $this->getServer()->getProperty("chunk-ticking.light-updates", false)){
-			$this->getServer()->getScheduler()->scheduleAsyncTask(new LightPopulationTask($this, $chunk));
+			$this->getServer()->getAsyncPool()->submitTask(new LightPopulationTask($this, $chunk));
 		}
 
 		if($this->isChunkInUse($x, $z)){
@@ -2954,7 +2948,7 @@ class Level implements ChunkManager, Metadatable{
 						}
 					}
 					$task = new PopulationTask($this, $chunk);
-					$this->server->getScheduler()->scheduleAsyncTask($task);
+					$this->server->getAsyncPool()->submitTask($task);
 				}
 			}
 
