@@ -21,21 +21,11 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\level\generator;
+namespace pocketmine\block;
 
-use pocketmine\level\Level;
-use pocketmine\scheduler\AsyncTask;
+class MyCustomBlock extends Cobblestone{
 
-class GeneratorUnregisterTask extends AsyncTask{
-
-	public $levelId;
-
-	public function __construct(Level $level){
-		$this->levelId = $level->getId();
-	}
-
-	public function onRun(){
-		$this->removeFromThreadStore("generation.level{$this->levelId}.manager");
-		$this->removeFromThreadStore("generation.level{$this->levelId}.generator");
+	public function getName() : string{
+		return "MyCobblestone";
 	}
 }
