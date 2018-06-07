@@ -21,12 +21,10 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\level\format\io;
+namespace pocketmine\network\mcpe;
 
 use pocketmine\level\format\Chunk;
 use pocketmine\level\Level;
-use pocketmine\network\mcpe\CompressBatchedTask;
-use pocketmine\network\mcpe\PacketBuffer;
 use pocketmine\network\mcpe\protocol\FullChunkDataPacket;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\Server;
