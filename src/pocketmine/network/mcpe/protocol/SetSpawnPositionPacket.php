@@ -60,5 +60,4 @@ class SetSpawnPositionPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleSetSpawnPosition($this);
 	}
-
 }

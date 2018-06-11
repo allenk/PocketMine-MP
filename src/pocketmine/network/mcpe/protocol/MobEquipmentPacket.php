@@ -62,5 +62,4 @@ class MobEquipmentPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleMobEquipment($this);
 	}
-
 }

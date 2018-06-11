@@ -60,5 +60,4 @@ class ResourcePackClientResponsePacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleResourcePackClientResponse($this);
 	}
-
 }

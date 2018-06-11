@@ -231,5 +231,4 @@ class StartGamePacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleStartGame($this);
 	}
-
 }

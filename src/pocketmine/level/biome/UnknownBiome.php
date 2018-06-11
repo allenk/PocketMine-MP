@@ -23,6 +23,12 @@ declare(strict_types=1);
 
 namespace pocketmine\level\biome;
 
-abstract class NormalBiome extends Biome{
+/**
+ * Polyfill class for biomes that are unknown to PocketMine-MP
+ */
+class UnknownBiome extends Biome{
 
+	public function getName() : string{
+		return "Unknown";
+	}
 }

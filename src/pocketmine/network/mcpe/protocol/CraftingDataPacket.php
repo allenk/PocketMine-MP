@@ -218,5 +218,4 @@ class CraftingDataPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleCraftingData($this);
 	}
-
 }

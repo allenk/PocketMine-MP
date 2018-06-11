@@ -91,5 +91,4 @@ class MovePlayerPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleMovePlayer($this);
 	}
-
 }

@@ -45,5 +45,4 @@ class RemoveEntityPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleRemoveEntity($this);
 	}
-
 }

@@ -21,24 +21,27 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\event\player;
+namespace pocketmine\inventory;
 
-use pocketmine\block\Block;
-use pocketmine\Player;
+use pocketmine\entity\Entity;
+use pocketmine\event\entity\EntityArmorChangeEvent;
+use pocketmine\item\Item;
+use pocketmine\Server;
 
-class PlayerBedLeaveEvent extends PlayerEvent{
-	/** @var Block */
-	private $bed;
+class ArmorInventoryEventProcessor implements InventoryEventProcessor{
+	/** @var Entity */
+	private $entity;
 
-	public function __construct(Player $player, Block $bed){
-		$this->player = $player;
-		$this->bed = $bed;
+	public function __construct(Entity $entity){
+		$this->entity = $entity;
 	}
 
-	/**
-	 * @return Block
-	 */
-	public function getBed() : Block{
-		return $this->bed;
+	public function onSlotChange(Inventory $inventory, int $slot, Item $oldItem, Item $newItem) : ?Item{
+		Server::getInstance()->getPluginManager()->callEvent($ev = new EntityArmorChangeEvent($this->entity, $oldItem, $newItem, $slot));
+		if($ev->isCancelled()){
+			return null;
+		}
+
+		return $ev->getNewItem();
 	}
 }

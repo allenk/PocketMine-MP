@@ -46,5 +46,4 @@ class RespawnPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleRespawn($this);
 	}
-
 }

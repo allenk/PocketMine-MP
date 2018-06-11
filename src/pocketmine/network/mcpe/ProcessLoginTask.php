@@ -149,5 +149,4 @@ class ProcessLoginTask extends AsyncTask{
 
 		$session->onClientAuthenticated($this->packet, $this->error, $this->authenticated);
 	}
-
 }

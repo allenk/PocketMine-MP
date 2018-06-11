@@ -618,8 +618,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	}
 
 	public function sendCommandData(){
-		//TODO: this needs fixing
-
 		$pk = new AvailableCommandsPacket();
 		foreach($this->server->getCommandMap()->getCommands() as $name => $command){
 			if(isset($pk->commandData[$command->getName()]) or $command->getName() === "help"){
@@ -931,12 +929,15 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 	protected function switchLevel(Level $targetLevel) : bool{
 		$oldLevel = $this->level;
 		if(parent::switchLevel($targetLevel)){
-			foreach($this->usedChunks as $index => $d){
-				Level::getXZ($index, $X, $Z);
-				$this->unloadChunk($X, $Z, $oldLevel);
+			if($oldLevel !== null){
+				foreach($this->usedChunks as $index => $d){
+					Level::getXZ($index, $X, $Z);
+					$this->unloadChunk($X, $Z, $oldLevel);
+				}
 			}
 
 			$this->usedChunks = [];
+			$this->loadQueue = [];
 			$this->level->sendTime($this);
 			$this->level->sendDifficulty($this);
 
@@ -1069,9 +1070,9 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$this->dataPacket($pk);
 	}
 
-	protected function orderChunks(){
+	protected function orderChunks() : void{
 		if(!$this->isConnected() or $this->viewDistance === -1){
-			return false;
+			return;
 		}
 
 		Timings::$playerChunkOrderTimer->startTiming();
@@ -1156,8 +1157,6 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$this->loadQueue = $newOrder;
 
 		Timings::$playerChunkOrderTimer->stopTiming();
-
-		return true;
 	}
 
 	public function doChunkRequests(){
@@ -1524,8 +1523,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		return false; //currently has no server-side movement
 	}
 
-	protected function checkNearEntities(int $tickDiff){
-		foreach($this->level->getNearbyEntities($this->boundingBox->grow(1, 0.5, 1), $this) as $entity){
+	protected function checkNearEntities(){
+		foreach($this->level->getNearbyEntities($this->boundingBox->expandedCopy(1, 0.5, 1), $this) as $entity){
 			$entity->scheduleUpdate();
 
 			if(!$entity->isAlive() or $entity->isFlaggedForDespawn()){
@@ -1728,7 +1727,7 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 			if(!$this->isSpectator() and $this->isAlive()){
 				Timings::$playerCheckNearEntitiesTimer->startTiming();
-				$this->checkNearEntities($tickDiff);
+				$this->checkNearEntities();
 				Timings::$playerCheckNearEntitiesTimer->stopTiming();
 
 				if($this->speed !== null){

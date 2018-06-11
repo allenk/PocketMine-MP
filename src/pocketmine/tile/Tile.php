@@ -110,13 +110,13 @@ abstract class Tile extends Position{
 	}
 
 	/**
-	 * @param       $className
-	 * @param array $saveNames
+	 * @param string $className
+	 * @param array  $saveNames
 	 *
 	 * @return bool
 	 * @throws \ReflectionException
 	 */
-	public static function registerTile($className, array $saveNames = []) : bool{
+	public static function registerTile(string $className, array $saveNames = []) : bool{
 		$class = new \ReflectionClass($className);
 		if(is_a($className, Tile::class, true) and !$class->isAbstract()){
 			$shortName = $class->getShortName();
@@ -254,6 +254,9 @@ abstract class Tile extends Position{
 	}
 
 	final public function scheduleUpdate() : void{
+		if($this->closed){
+			throw new \InvalidStateException("Cannot schedule update on garbage tile " . get_class($this));
+		}
 		$this->level->updateTiles[$this->id] = $this;
 	}
 
@@ -279,5 +282,4 @@ abstract class Tile extends Position{
 	public function getName() : string{
 		return $this->name;
 	}
-
 }

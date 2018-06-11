@@ -50,5 +50,4 @@ class UpdateAttributesPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleUpdateAttributes($this);
 	}
-
 }

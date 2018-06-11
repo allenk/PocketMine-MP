@@ -50,6 +50,7 @@ use pocketmine\level\format\EmptySubChunk;
 use pocketmine\level\format\io\BaseLevelProvider;
 use pocketmine\level\format\io\LevelProvider;
 use pocketmine\level\generator\Generator;
+use pocketmine\level\generator\GeneratorManager;
 use pocketmine\level\generator\GeneratorRegisterTask;
 use pocketmine\level\generator\GeneratorUnregisterTask;
 use pocketmine\level\generator\PopulationTask;
@@ -244,7 +245,8 @@ class Level implements ChunkManager, Metadatable{
 	/** @var bool */
 	private $closed = false;
 
-
+	/** @var \Closure */
+	private $asyncPoolStartHook;
 
 	public static function chunkHash(int $x, int $z) : int{
 		return (($x & 0xFFFFFFFF) << 32) | ($z & 0xFFFFFFFF);
@@ -331,7 +333,7 @@ class Level implements ChunkManager, Metadatable{
 		$this->worldHeight = $this->provider->getWorldHeight();
 
 		$this->server->getLogger()->info($this->server->getLanguage()->translateString("pocketmine.level.preparing", [$this->displayName]));
-		$this->generator = Generator::getGenerator($this->provider->getGenerator());
+		$this->generator = GeneratorManager::getGenerator($this->provider->getGenerator());
 
 		$this->folderName = $name;
 
@@ -361,6 +363,10 @@ class Level implements ChunkManager, Metadatable{
 		$this->temporalPosition = new Position(0, 0, 0, $this);
 		$this->temporalVector = new Vector3(0, 0, 0);
 		$this->tickRate = 1;
+
+		$this->server->getAsyncPool()->addWorkerStartHook($this->asyncPoolStartHook = function(int $worker) : void{
+			$this->registerGeneratorToWorker($worker);
+		});
 	}
 
 	public function getTickRate() : int{
@@ -375,21 +381,14 @@ class Level implements ChunkManager, Metadatable{
 		$this->tickRate = $tickRate;
 	}
 
-	public function initLevel(){
-		$this->registerGenerator();
-	}
-
-	public function registerGenerator(){
-		$pool = $this->server->getAsyncPool();
-		for($i = 0, $size = $pool->getSize(); $i < $size; ++$i){
-			$pool->submitTaskToWorker(new GeneratorRegisterTask($this, $this->generator, $this->provider->getGeneratorOptions()), $i);
-
-		}
+	public function registerGeneratorToWorker(int $worker) : void{
+		$this->server->getAsyncPool()->submitTaskToWorker(new GeneratorRegisterTask($this, $this->generator, $this->provider->getGeneratorOptions()), $worker);
 	}
 
 	public function unregisterGenerator(){
 		$pool = $this->server->getAsyncPool();
-		for($i = 0, $size = $pool->getSize(); $i < $size; ++$i){
+		$pool->removeWorkerStartHook($this->asyncPoolStartHook);
+		foreach($pool->getRunningWorkers() as $i){
 			$pool->submitTaskToWorker(new GeneratorUnregisterTask($this), $i);
 		}
 	}
@@ -745,6 +744,9 @@ class Level implements ChunkManager, Metadatable{
 			if($entity->isClosed() or !$entity->onUpdate($currentTick)){
 				unset($this->updateEntities[$id]);
 			}
+			if($entity->isFlaggedForDespawn()){
+				$entity->close();
+			}
 		}
 		Timings::$tickEntityTimer->stopTiming();
 		$this->timings->entityTick->stopTiming();
@@ -849,7 +851,7 @@ class Level implements ChunkManager, Metadatable{
 	 * @param int      $flags
 	 * @param bool     $optimizeRebuilds
 	 */
-	public function sendBlocks(array $target, array $blocks, $flags = UpdateBlockPacket::FLAG_NONE, bool $optimizeRebuilds = false){
+	public function sendBlocks(array $target, array $blocks, int $flags = UpdateBlockPacket::FLAG_NONE, bool $optimizeRebuilds = false){
 		$packets = [];
 		if($optimizeRebuilds){
 			$chunks = [];
@@ -1184,7 +1186,7 @@ class Level implements ChunkManager, Metadatable{
 		}
 
 		if($entities){
-			foreach($this->getCollidingEntities($bb->grow(0.25, 0.25, 0.25), $entity) as $ent){
+			foreach($this->getCollidingEntities($bb->expandedCopy(0.25, 0.25, 0.25), $entity) as $ent){
 				$collides[] = clone $ent->boundingBox;
 			}
 		}
@@ -1817,7 +1819,7 @@ class Level implements ChunkManager, Metadatable{
 
 				if($player !== null){
 					if(($diff = $player->getNextPosition()->subtract($player->getPosition())) and $diff->lengthSquared() > 0.00001){
-						$bb = $player->getBoundingBox()->getOffsetBoundingBox($diff->x, $diff->y, $diff->z);
+						$bb = $player->getBoundingBox()->offsetCopy($diff->x, $diff->y, $diff->z);
 						if($collisionBox->intersectsWith($bb)){
 							return false; //Inside player BB
 						}
@@ -2066,7 +2068,7 @@ class Level implements ChunkManager, Metadatable{
 	 *
 	 * @return Entity[]
 	 */
-	public function getChunkEntities($X, $Z) : array{
+	public function getChunkEntities(int $X, int $Z) : array{
 		return ($chunk = $this->getChunk($X, $Z)) !== null ? $chunk->getEntities() : [];
 	}
 
@@ -2078,7 +2080,7 @@ class Level implements ChunkManager, Metadatable{
 	 *
 	 * @return Tile[]
 	 */
-	public function getChunkTiles($X, $Z) : array{
+	public function getChunkTiles(int $X, int $Z) : array{
 		return ($chunk = $this->getChunk($X, $Z)) !== null ? $chunk->getTiles() : [];
 	}
 
@@ -2486,8 +2488,9 @@ class Level implements ChunkManager, Metadatable{
 				if(!($chunk instanceof Chunk)){
 					throw new ChunkException("Invalid Chunk sent");
 				}
+				assert($chunk->getX() === $x and $chunk->getZ() === $z, "Chunk coordinate mismatch: expected $x $z, but chunk has coordinates " . $chunk->getX() . " " . $chunk->getZ() . ", did you forget to clone a chunk before setting?");
 
-				$this->server->getAsyncPool()->submitTask(new ChunkRequestTask($this, $chunk));
+				$this->server->getAsyncPool()->submitTask(new ChunkRequestTask($this, $x, $z, $chunk));
 
 				$this->timings->syncChunkSendPrepareTimer->stopTiming();
 			}

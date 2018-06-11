@@ -289,5 +289,4 @@ class CraftingManager{
 	public function registerRecipe(Recipe $recipe) : void{
 		$recipe->registerToCraftingManager($this);
 	}
-
 }

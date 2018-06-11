@@ -54,5 +54,4 @@ class ChangeDimensionPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleChangeDimension($this);
 	}
-
 }

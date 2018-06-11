@@ -21,22 +21,27 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\level\generator\populator;
+namespace pocketmine\inventory;
 
-use pocketmine\level\ChunkManager;
-use pocketmine\utils\Random;
+use pocketmine\entity\Entity;
+use pocketmine\event\entity\EntityInventoryChangeEvent;
+use pocketmine\item\Item;
+use pocketmine\Server;
 
-class Mineshaft extends Populator{
-	private static $DISTANCE = 256;
-	private static $VARIATION = 16;
-	private static $ODD = 3;
-	private static $BASE_Y = 35;
-	private static $RAND_Y = 11;
+class EntityInventoryEventProcessor implements InventoryEventProcessor{
+	/** @var Entity */
+	private $entity;
 
-	public function populate(ChunkManager $level, int $chunkX, int $chunkZ, Random $random){
-		if($random->nextRange(0, self::$ODD) === 0){
-			//$mineshaft = new Mineshaft($random);
-		}
+	public function __construct(Entity $entity){
+		$this->entity = $entity;
 	}
 
+	public function onSlotChange(Inventory $inventory, int $slot, Item $oldItem, Item $newItem) : ?Item{
+		Server::getInstance()->getPluginManager()->callEvent($ev = new EntityInventoryChangeEvent($this->entity, $oldItem, $newItem, $slot));
+		if($ev->isCancelled()){
+			return null;
+		}
+
+		return $ev->getNewItem();
+	}
 }

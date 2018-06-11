@@ -70,5 +70,4 @@ class AddItemEntityPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleAddItemEntity($this);
 	}
-
 }

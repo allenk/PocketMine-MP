@@ -133,5 +133,4 @@ class LevelEventPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleLevelEvent($this);
 	}
-
 }

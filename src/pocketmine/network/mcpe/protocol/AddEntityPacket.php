@@ -116,5 +116,4 @@ class AddEntityPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleAddEntity($this);
 	}
-
 }

@@ -47,5 +47,4 @@ class AddPaintingPacket extends AddHangingEntityPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleAddPainting($this);
 	}
-
 }

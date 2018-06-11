@@ -141,5 +141,4 @@ class PlayerCreationEvent extends Event{
 
 		$this->playerClass = $class;
 	}
-
 }

@@ -50,5 +50,4 @@ class SetEntityMotionPacket extends DataPacket{
 	public function handle(NetworkHandler $handler) : bool{
 		return $handler->handleSetEntityMotion($this);
 	}
-
 }
