@@ -80,7 +80,7 @@ class RakLibInterface implements ServerInstance, AdvancedNetworkInterface{
 	}
 
 	public function start() : void{
-		$this->rakLib->start(PTHREADS_INHERIT_CONSTANTS); //HACK: constants needed for cleanPath() in case of exception logging on MainLogger
+		$this->rakLib->start(PTHREADS_INHERIT_CONSTANTS | PTHREADS_INHERIT_INI); //HACK: MainLogger needs INI and constants
 	}
 
 	public function setNetwork(Network $network) : void{
