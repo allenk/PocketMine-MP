@@ -107,7 +107,6 @@ use pocketmine\utils\Terminal;
 use pocketmine\utils\TextFormat;
 use pocketmine\utils\Utils;
 use pocketmine\utils\UUID;
-use pocketmine\utils\VersionString;
 
 /**
  * The class that manages everything
@@ -318,7 +317,7 @@ class Server{
 	 * @return string
 	 */
 	public function getApiVersion() : string{
-		return \pocketmine\API_VERSION;
+		return \pocketmine\BASE_VERSION;
 	}
 
 	/**
@@ -1429,12 +1428,10 @@ class Server{
 			$this->dataPath = realpath($dataPath) . DIRECTORY_SEPARATOR;
 			$this->pluginPath = realpath($pluginPath) . DIRECTORY_SEPARATOR;
 
-			$version = new VersionString($this->getPocketMineVersion());
-
 			$this->logger->info("Loading pocketmine.yml...");
 			if(!file_exists($this->dataPath . "pocketmine.yml")){
 				$content = file_get_contents(\pocketmine\RESOURCE_PATH . "pocketmine.yml");
-				if($version->isDev()){
+				if(\pocketmine\IS_DEVELOPMENT_BUILD){
 					$content = str_replace("preferred-channel: stable", "preferred-channel: beta", $content);
 				}
 				@file_put_contents($this->dataPath . "pocketmine.yml", $content);
@@ -1506,7 +1503,7 @@ class Server{
 					$poolSize = max(1, $processors);
 				}
 			}else{
-				$poolSize = (int) $poolSize;
+				$poolSize = max(1, (int) $poolSize);
 			}
 
 			$this->asyncPool = new AsyncPool($this, $poolSize, (int) max(-1, (int) $this->getProperty("memory.async-worker-hard-limit", 256)), $this->autoloader, $this->logger);
@@ -1601,8 +1598,7 @@ class Server{
 
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.info", [
 				$this->getName(),
-				($version->isDev() ? TextFormat::YELLOW : "") . $version->get(true) . TextFormat::RESET,
-				$this->getApiVersion()
+				(\pocketmine\IS_DEVELOPMENT_BUILD ? TextFormat::YELLOW : "") . $this->getPocketMineVersion() . TextFormat::RESET
 			]));
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.license", [$this->getName()]));
 
@@ -2195,7 +2191,7 @@ class Server{
 		$this->logger->logException($e, $trace);
 
 		$lastError = [
-			"type" => \get_class($e),
+			"type" => get_class($e),
 			"message" => $errstr,
 			"fullFile" => $e->getFile(),
 			"file" => $errfile,

@@ -57,6 +57,11 @@ class PluginManager{
 	protected $plugins = [];
 
 	/**
+	 * @var Plugin[]
+	 */
+	protected $enabledPlugins = [];
+
+	/**
 	 * @var Permission[]
 	 */
 	protected $permissions = [];
@@ -387,19 +392,21 @@ class PluginManager{
 	 * @return bool
 	 */
 	public function isCompatibleApi(string ...$versions) : bool{
+		$serverString = $this->server->getApiVersion();
+		$serverApi = array_pad(explode("-", $serverString), 2, "");
+		$serverNumbers = array_map("intval", explode(".", $serverApi[0]));
+
 		foreach($versions as $version){
 			//Format: majorVersion.minorVersion.patch (3.0.0)
 			//    or: majorVersion.minorVersion.patch-devBuild (3.0.0-alpha1)
-			if($version !== $this->server->getApiVersion()){
+			if($version !== $serverString){
 				$pluginApi = array_pad(explode("-", $version), 2, ""); //0 = version, 1 = suffix (optional)
-				$serverApi = array_pad(explode("-", $this->server->getApiVersion()), 2, "");
 
 				if(strtoupper($pluginApi[1]) !== strtoupper($serverApi[1])){ //Different release phase (alpha vs. beta) or phase build (alpha.1 vs alpha.2)
 					continue;
 				}
 
 				$pluginNumbers = array_map("intval", array_pad(explode(".", $pluginApi[0]), 3, "0")); //plugins might specify API like "3.0" or "3"
-				$serverNumbers = array_map("intval", explode(".", $serverApi[0]));
 
 				if($pluginNumbers[0] !== $serverNumbers[0]){ //Completely different API version
 					continue;
@@ -610,6 +617,8 @@ class PluginManager{
 				$plugin->getScheduler()->setEnabled(true);
 				$plugin->setEnabled(true);
 
+				$this->enabledPlugins[$plugin->getDescription()->getName()] = $plugin;
+
 				$this->server->getPluginManager()->callEvent(new PluginEnableEvent($plugin));
 			}catch(\Throwable $e){
 				$this->server->getLogger()->logException($e);
@@ -689,6 +698,8 @@ class PluginManager{
 			$this->server->getLogger()->info($this->server->getLanguage()->translateString("pocketmine.plugin.disable", [$plugin->getDescription()->getFullName()]));
 			$this->callEvent(new PluginDisableEvent($plugin));
 
+			unset($this->enabledPlugins[$plugin->getDescription()->getName()]);
+
 			try{
 				$plugin->setEnabled(false);
 			}catch(\Throwable $e){
@@ -703,16 +714,15 @@ class PluginManager{
 	}
 
 	public function tickSchedulers(int $currentTick) : void{
-		foreach($this->plugins as $p){
-			if($p->isEnabled()){
-				$p->getScheduler()->mainThreadHeartbeat($currentTick);
-			}
+		foreach($this->enabledPlugins as $p){
+			$p->getScheduler()->mainThreadHeartbeat($currentTick);
 		}
 	}
 
 	public function clearPlugins(){
 		$this->disablePlugins();
 		$this->plugins = [];
+		$this->enabledPlugins = [];
 		$this->fileAssociations = [];
 		$this->permissions = [];
 		$this->defaultPerms = [];
@@ -786,7 +796,7 @@ class PluginManager{
 				try{
 					$priority = isset($tags["priority"]) ? EventPriority::fromString($tags["priority"]) : EventPriority::NORMAL;
 				}catch(\InvalidArgumentException $e){
-					throw new PluginException("Event handler " . \get_class($listener) . "->" . $method->getName() . "() declares invalid/unknown priority \"" . $tags["priority"] . "\"");
+					throw new PluginException("Event handler " . get_class($listener) . "->" . $method->getName() . "() declares invalid/unknown priority \"" . $tags["priority"] . "\"");
 				}
 				$ignoreCancelled = isset($tags["ignoreCancelled"]) && strtolower($tags["ignoreCancelled"]) === "true";
 

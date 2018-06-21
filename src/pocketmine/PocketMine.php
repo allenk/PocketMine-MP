@@ -33,12 +33,13 @@ namespace pocketmine {
 	use pocketmine\utils\Terminal;
 	use pocketmine\utils\Timezone;
 	use pocketmine\utils\Utils;
+	use pocketmine\utils\VersionString;
 	use pocketmine\wizard\SetupWizard;
 
 	const NAME = "PocketMine-MP";
-	const VERSION = "1.7dev";
-	const API_VERSION = "3.0.0";
-	const IS_DEVELOPMENT_BUILD = true;
+	const BASE_VERSION = "3.0.1";
+	const IS_DEVELOPMENT_BUILD = false;
+	const BUILD_NUMBER = 0;
 
 	const MIN_PHP_VERSION = "7.2.0";
 
@@ -54,13 +55,14 @@ namespace pocketmine {
 
 	if(version_compare(MIN_PHP_VERSION, PHP_VERSION) > 0){
 		critical_error(\pocketmine\NAME . " requires PHP >= " . MIN_PHP_VERSION . ", but you have PHP " . PHP_VERSION . ".");
-		critical_error("Please use the installer provided on the homepage, or update to a newer PHP version.");
+		critical_error("Please refer to the installation instructions at http://pmmp.rtfd.io/en/rtfd/installation.html.");
 		exit(1);
 	}
 
 	if(PHP_INT_SIZE < 8){
 		critical_error("Running " . \pocketmine\NAME . " with 32-bit systems/PHP is no longer supported.");
 		critical_error("Please upgrade to a 64-bit system, or use a 64-bit PHP binary if this is a 64-bit system.");
+		critical_error("Please refer to the installation instructions at http://pmmp.rtfd.io/en/rtfd/installation.html.");
 		exit(1);
 	}
 
@@ -105,8 +107,8 @@ namespace pocketmine {
 		if(substr_count($pthreads_version, ".") < 2){
 			$pthreads_version = "0.$pthreads_version";
 		}
-		if(version_compare($pthreads_version, "3.1.7-dev") < 0){
-			critical_error("pthreads >= 3.1.7-dev is required, while you have $pthreads_version.");
+		if(version_compare($pthreads_version, "3.1.7dev") < 0){
+			critical_error("pthreads >= 3.1.7dev is required, while you have $pthreads_version.");
 			++$errors;
 		}
 	}
@@ -125,7 +127,7 @@ namespace pocketmine {
 	}
 
 	if($errors > 0){
-		critical_error("Please use the installer provided on the homepage, or recompile PHP again.");
+		critical_error("Please recompile PHP with the needed configuration, or refer to the installation instructions at http://pmmp.rtfd.io/en/rtfd/installation.html.");
 		exit(1);
 	}
 
@@ -139,16 +141,12 @@ namespace pocketmine {
 
 	define('pocketmine\COMPOSER_AUTOLOADER_PATH', \pocketmine\PATH . 'vendor/autoload.php');
 
-	function composer_error_die($message){
-		critical_error($message);
-		critical_error("Please install/update Composer dependencies or use provided builds.");
-		exit(1);
-	}
-
 	if(is_file(\pocketmine\COMPOSER_AUTOLOADER_PATH)){
 		require_once(\pocketmine\COMPOSER_AUTOLOADER_PATH);
 	}else{
-		composer_error_die("Composer autoloader not found.");
+		critical_error("Composer autoloader not found.");
+		critical_error("Please install/update Composer dependencies or use provided builds.");
+		exit(1);
 	}
 
 	set_error_handler([Utils::class, 'errorExceptionHandler']);
@@ -171,10 +169,10 @@ namespace pocketmine {
 
 	define('pocketmine\RESOURCE_PATH', \pocketmine\PATH . 'src' . DIRECTORY_SEPARATOR . 'pocketmine' . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR);
 
-	$opts = getopt("", ["data:", "plugins:", "no-wizard", "enable-profiler"]);
+	$opts = getopt("", ["data:", "plugins:", "no-wizard"]);
 
-	define('pocketmine\DATA', isset($opts["data"]) ? $opts["data"] . DIRECTORY_SEPARATOR : \realpath(\getcwd()) . DIRECTORY_SEPARATOR);
-	define('pocketmine\PLUGIN_PATH', isset($opts["plugins"]) ? $opts["plugins"] . DIRECTORY_SEPARATOR : \realpath(\getcwd()) . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR);
+	define('pocketmine\DATA', isset($opts["data"]) ? $opts["data"] . DIRECTORY_SEPARATOR : realpath(getcwd()) . DIRECTORY_SEPARATOR);
+	define('pocketmine\PLUGIN_PATH', isset($opts["plugins"]) ? $opts["plugins"] . DIRECTORY_SEPARATOR : realpath(getcwd()) . DIRECTORY_SEPARATOR . "plugins" . DIRECTORY_SEPARATOR);
 
 	if(!file_exists(\pocketmine\DATA)){
 		mkdir(\pocketmine\DATA, 0777, true);
@@ -191,15 +189,6 @@ namespace pocketmine {
 	}
 	unset($tzError);
 
-	if(isset($opts["enable-profiler"])){
-		if(function_exists("profiler_enable")){
-			\profiler_enable();
-			$logger->notice("Execution is being profiled");
-		}else{
-			$logger->notice("No profiler found. Please install https://github.com/krakjoe/profiler");
-		}
-	}
-
 	if(extension_loaded("xdebug")){
 		$logger->warning(PHP_EOL . PHP_EOL . PHP_EOL . "\tYou are running " . \pocketmine\NAME . " with xdebug enabled. This has a major impact on performance." . PHP_EOL . PHP_EOL);
 	}
@@ -207,6 +196,9 @@ namespace pocketmine {
 	if(\Phar::running(true) === ""){
 		$logger->warning("Non-packaged " . \pocketmine\NAME . " installation detected. Consider using a phar in production for better performance.");
 	}
+
+	$version = new VersionString(\pocketmine\BASE_VERSION, \pocketmine\IS_DEVELOPMENT_BUILD, \pocketmine\BUILD_NUMBER);
+	define('pocketmine\VERSION', $version->getFullVersion(true));
 
 	$gitHash = str_repeat("00", 20);
 
