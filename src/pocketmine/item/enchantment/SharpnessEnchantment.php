@@ -21,48 +21,17 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\item\enchantment;
 
-use pocketmine\item\Item;
-use pocketmine\math\AxisAlignedBB;
+use pocketmine\entity\Entity;
 
-class EndPortalFrame extends Solid{
+class SharpnessEnchantment extends MeleeWeaponEnchantment{
 
-	protected $id = self::END_PORTAL_FRAME;
-
-	public function __construct(int $meta = 0){
-		$this->meta = $meta;
+	public function isApplicableTo(Entity $victim) : bool{
+		return true;
 	}
 
-	public function getLightLevel() : int{
-		return 1;
-	}
-
-	public function getName() : string{
-		return "End Portal Frame";
-	}
-
-	public function getHardness() : float{
-		return -1;
-	}
-
-	public function getBlastResistance() : float{
-		return 18000000;
-	}
-
-	public function isBreakable(Item $item) : bool{
-		return false;
-	}
-
-	protected function recalculateBoundingBox() : ?AxisAlignedBB{
-
-		return new AxisAlignedBB(
-			0,
-			0,
-			0,
-			1,
-			(($this->getDamage() & 0x04) > 0 ? 1 : 0.8125),
-			1
-		);
+	public function getDamageBonus(int $enchantmentLevel) : float{
+		return 0.5 * ($enchantmentLevel + 1);
 	}
 }
