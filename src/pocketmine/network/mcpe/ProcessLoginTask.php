@@ -54,7 +54,7 @@ class ProcessLoginTask extends AsyncTask{
 		$this->packet = $packet;
 	}
 
-	public function onRun(){
+	public function onRun() : void{
 		$packet = $this->packet; //Get it in a local variable to make sure it stays unserialized
 
 		try{
@@ -143,7 +143,7 @@ class ProcessLoginTask extends AsyncTask{
 		$currentPublicKey = $claims["identityPublicKey"] ?? null; //if there are further links, the next link should be signed with this
 	}
 
-	public function onCompletion(Server $server){
+	public function onCompletion(Server $server) : void{
 		/** @var PlayerNetworkSession $session */
 		$session = $this->fetchLocal();
 

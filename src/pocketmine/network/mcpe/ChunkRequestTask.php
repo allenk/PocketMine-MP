@@ -61,7 +61,7 @@ class ChunkRequestTask extends AsyncTask{
 		$this->tiles = $tiles;
 	}
 
-	public function onRun(){
+	public function onRun() : void{
 		$chunk = Chunk::fastDeserialize($this->chunk);
 
 		$pk = new FullChunkDataPacket();
@@ -75,7 +75,7 @@ class ChunkRequestTask extends AsyncTask{
 		$this->setResult($batch->compress($this->compressionLevel), false);
 	}
 
-	public function onCompletion(Server $server){
+	public function onCompletion(Server $server) : void{
 		$level = $server->getLevel($this->levelId);
 		if($level instanceof Level){
 			if($this->hasResult()){
